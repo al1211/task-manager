@@ -51,6 +51,39 @@ export const userSingup = async (req, res) => {
   }
 };
 
+export const userLogin=async(req,res)=>{
+  try {
+    const {email}=req.body;
+    if(!email){
+      return res.status(400).json({message:"Email required"});
+    };
+
+    const exituser=await User.findOne({email});
+    if(!exituser){
+      return res.status(400).json({message:"User no found"})
+    };
+    const otp=otpgenerate.generate(6,{
+        digits: true,
+      alphabets: false,
+      upperCase: false,
+      specialChars: false,
+    });
+    exituser.otp=otp;
+    exituser.otpExpiry=Date.now()+5*60*1000;
+    await exituser.save();
+
+    await sendEmail(email, "Your otp code", `The OTP is: ${otp}`);
+
+     res.status(200).json({ message: "OTP sent to email" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({message:`Error in login user ${err}`})
+  }
+}
+
+
+
+// verification ot otp
 export const userVerificationOtp = async (req, res) => {
   try {
     // get email and otp from user
